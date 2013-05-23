@@ -7,7 +7,7 @@ import "sync"
 
 
 var busy bool
-var waiting bool
+var waiting int
 var mu sync.Mutex
 var OKtoread = sync.NewCond(&mu)
 var OKtowrite = sync.NewCond(&mu)
@@ -35,19 +35,19 @@ func ReaderEnd(){
 
 func WriterStart(){
 	mu.Lock()
-	waiting = true
+	waiting++
 	if busy || readercount != 0{
 		OKtowrite.Wait()
 	}
 	busy = true	
-	waiting = false
+	waiting--
 	mu.Unlock()
 }
 
 func WriterEnd(){
 	mu.Lock()
 	busy = false
-	if waiting {
+	if waiting > 0 {
 		OKtoread.Signal()
 	}else{
 		OKtowrite.Signal()
