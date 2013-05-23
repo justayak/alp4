@@ -1,10 +1,6 @@
 package main
-
-
 import ("fmt")
 import "sync"
-
-
 
 var busy bool
 var waiting int
@@ -20,7 +16,6 @@ func ReaderStart(){
 	}
 	readercount++
 	OKtoread.Signal()
-	
 	mu.Unlock()
 }
 
@@ -56,8 +51,13 @@ func WriterEnd(){
 }
 
 func main () {
+	ReaderStart()	
+	fmt.Println("lesen..")
+	ReaderEnd()
 
-
-
-   fmt.Println("Start")
+	WriterStart()
+	fmt.Println("schreiben..")
+	WriterEnd()
+	
+	fmt.Println("ende")
 }
