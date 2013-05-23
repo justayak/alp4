@@ -4,42 +4,55 @@ package main
 import ("fmt")
 import "sync"
 
-var (nR, nW uint; m sync.Mutex; c *sync.Cond = sync.NewCond (&m))
 
 
+var busy bool
+var waiting bool
+var mu sync.Mutex
+var OKtoread = sync.NewCond(&mu)
+var OKtowrite = sync.NewCond(&mu)
+var readercount int
 
-func ReaderIn(){
-	m.Lock()
-	for nW > 0{
-		c.Wait()	
+func ReaderStart(){
+	mu.Lock()
+	if busy {
+		OKtoread.Wait()
 	}
+	readercount++
+	OKtoread.Signal()
 	
-	nR++
-	c.Signal()
-	m.Unlock()
+	mu.Unlock()
 }
 
-func ReaderOut(){
-	m.Lock()
-	nR--
-	c.Signal()
-	m.Unlock()
+func ReaderEnd(){
+	mu.Lock()
+	readercount--
+	if readercount == 0 {
+		OKtowrite.Signal()
+	}
+	mu.Unlock()
 }
 
-func WriterIn(){
-	m.Lock()
-	for nR > 0 || nW > 0 {
-		c.Wait()	
-	}	
-	nW = 1
-	m.Unlock()
+func WriterStart(){
+	mu.Lock()
+	waiting = true
+	if busy || readercount != 0{
+		OKtowrite.Wait()
+	}
+	busy = true	
+	waiting = false
+	mu.Unlock()
 }
 
-func WriterOut(){
-	m.Lock()
-	nW = 0
-	c.Signal()
-	m.Unlock()
+func WriterEnd(){
+	mu.Lock()
+	busy = false
+	if waiting {
+		OKtoread.Signal()
+	}else{
+		OKtowrite.Signal()
+	}
+	mu.Unlock()
 }
 
 func main () {
