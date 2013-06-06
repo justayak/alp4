@@ -3,7 +3,7 @@ package main
 import "fmt"
 import "yulib"
 
-func makeTree(flip bool) yulib.Tree {
+func createTree(flip bool) yulib.Tree {
 	tree := yulib.Tree{}	
 	child1 := yulib.Node{}
 	child1.Data = 1	
@@ -34,20 +34,74 @@ func makeTree(flip bool) yulib.Tree {
 	return tree
 }
 
+type NodeContent struct{
+	Data int 
+	Level int
+	IsEnd bool
+}
+
+func (n NodeContent) equals(other NodeContent) bool {
+	return n.Data == other.Data && n.Level == other.Level && n.IsEnd == other.IsEnd
+}
+
+// Traversiert einen Baum und schreibt die Kinder
+// in den Channel c
+func traverse(tree yulib.Tree, c chan NodeContent){	
+	traverseRec(tree.Root, c, 0)	
+	endSignal := NodeContent{}
+	endSignal.IsEnd = true 
+	c<-endSignal
+	close(c)
+}
+
+func traverseRec(node yulib.Node, c chan NodeContent, treeDepth int ){
+	current := NodeContent{}
+	current.Data = node.Data
+	current.Level = treeDepth
+	current.IsEnd = false
+	c<-current	
+	for i:= range node.Children {
+		child := node.Children[i]
+		traverseRec(child, c, treeDepth + 1)
+	}	
+}
+
+// Vergleicht zwei Baum-Channels
+func compare(a,b chan NodeContent, result chan bool){
+	
+	for {		
+		left := <- a
+		right := <- b
+		
+		if left.equals(right) {
+			if left.IsEnd {
+				result <- true
+				close(result)
+				break
+			}
+		} else {
+			result <- false
+			close(result)
+			break
+		}
+	
+	}
+	
+	
+}
+
 func main() {    
 	
 	// 2x der gleiche Baum
-	tree1 := makeTree(true)
-	tree2 := makeTree(true) 
+	tree1 := createTree( true )
+	//tree2 := createTree( true ) 
+	
+	
 	
 	// 1x ein anderer Baum
-	tree3 := makeTree(false)
+	tree3 := createTree( false )
 	
-	
-	
-	tree1.Print()
-	tree2.Print()
-	tree3.Print()
+	fmt.Println(EqualTrees(tree1,tree3))
 	
 	fmt.Println("End")
 }
@@ -56,8 +110,16 @@ func main() {
 func EqualTrees(a yulib.Tree, b yulib.Tree) bool {
 	if a.Size() != b.Size() { return false }
 	
+	left := make(chan NodeContent)
+	right := make(chan NodeContent)
+	result := make(chan bool)
 	
 	
-	return false
+	go traverse(a, left)
+	go traverse(b, right)
+	go compare(left,right,result)
+	
+	e := <-result	
+	return e
 	
 }
