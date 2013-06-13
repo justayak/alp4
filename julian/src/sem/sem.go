@@ -1,14 +1,20 @@
-package sem
-type Semaphore struct{
-	c chan bool
+package sem 
+type empty struct {}
+type Semaphore chan empty
+
+var sem = make(Semaphore, 1)
+
+// acquire n resources
+func (s Semaphore) P(n int) {
+    e := empty{}
+    for i := 0; i < n; i++ {
+        s <- e
+    }
 }
 
-func New (n uint) *Semaphore{
-	x:=new (Semaphore)
-	x.c = make(chan bool, n)
-	for i:= uint(0);i<n;i++ {x.c<- true}
-	return x
+// release n resources
+func (s Semaphore) V(n int) { 
+    for i := 0; i < n; i++ {
+        <-s
+    }
 }
-
-func (x *Semaphore) P() {<-x.c}
-func (x *Semaphore) V() {x.c<-true}
