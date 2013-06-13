@@ -1,6 +1,5 @@
 package main 
-//import ("math/rand"; "time"; "fmt")
-import ("fmt"; ."queue"; "yulib";)
+import ("fmt"; ."queue"; "yulib"; "sync";)
 
 const (
 	BIG = 4
@@ -12,13 +11,50 @@ type Object struct {
 	Value int
 }
 
-// zum versenden der Elemente
+// Paket zum versenden der Elemente
 type Package struct {
 	Elements [] Object
 }
 
 type Position struct {
-	
+	id int
+	Pending Queue
+	IsPriority bool 
+}
+
+var currentPositionID = 0
+
+// Erzeugt Position
+func generatePosition() Position{
+	queue := Queue{}	
+	for i:= 0; i < 30; i++ {
+		queue.Enq(generateObject())
+	}
+	result := Position{}	
+	result.Pending = queue
+	result.id = currentPositionID
+	currentPositionID += 1
+	return result
+}
+
+
+func (p *Position) hasPending() bool {
+	return !p.Pending.IsEmpty()
+}
+
+type Kanal struct{
+	A Position
+	B Position
+	Current Package
+	hasElement bool
+}
+
+// Liefert das Andere Zielobjekt (umständliche Methode :( )
+func (k *Kanal) getOther(p *Position) *Position{
+	if p.id == k.A.id {
+		return &k.B
+	}
+	return &k.A
 }
 
 // Erzeugt zufälliges Objekt
@@ -36,17 +72,60 @@ func generateObject() Object{
 	return result
 }
 
-func main () {
-	
-	queue := Queue{}
-	
-	for i:= 0; i < 10; i++ {
-		queue.Enq(generateObject())
+var lock sync.Mutex
+
+// versende die Pending-Objekte
+func (p *Position) send(k *Kanal, done chan bool ){
+	for {
+		if p.Pending.IsEmpty() {
+			done <- true
+			break			
+		}
+		//other := k.getOther(p)		
+		// build Package:
+		paket := Package{}		
+		sum:= 0
+		s := make( []Object,0 )
+		for {
+			sum += p.Pending.Peek().(Object).Value		
+			if sum > 4 { break }
+			t := make ([]Object, len(s), (cap(s)+1))
+			copy(t,s)
+			s = t
+			s[len(s)] = p.Pending.Deq().(Object)
+			
+		}
+		paket.Elements = s
+		// Paket ist fertig, versuche, zu versenden
+		
+		lock.Lock()
+		// Kanal belegt?
+		isBelegt := k.hasElement		
+		lock.Unlock()
+		
+		
 	}
 	
-	fmt.Printf ("size %d\n", queue.Size()) 
+}
+
+func main () {
+	//done := make( chan bool )
 	
-	elem := queue.Deq().(Object)
+	
+	A := generatePosition()	
+	B := generatePosition()
+	
+	kanal := Kanal {
+		A : A,
+		B : B,
+		hasElement : false,
+	}
+	
+	fmt.Printf ("size A %d\n", A.Pending.Size()) 
+	fmt.Printf ("size B %d\n", B.Pending.Size()) 
+	fmt.Printf ("size B %d\n", kanal.hasElement) 
+	
+	elem := A.Pending.Deq().(Object)
 	
 	fmt.Printf("v %d\n", elem.Value)
 }
