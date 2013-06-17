@@ -4,7 +4,7 @@ type Queue struct {
 	queue [] interface{}
 }
 
-func NewQueue() Queue{
+func New() Queue{
 	queue:=make([]interface{}, 0)
 	
 	result := Queue{
