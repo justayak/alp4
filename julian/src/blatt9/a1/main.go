@@ -3,9 +3,10 @@ import (
 	"fmt"
 	//"sem"
 	"queue"
-	//"os/exec"
-	//"time"
-	//"os"
+	"os/exec"
+	"time"
+	"os"
+	"strconv"
 )
 
 var n int = 15
@@ -16,18 +17,25 @@ var aufzugUnten bool = true
 
 var sekunde = 1000000000
 
-func render(done chan bool, rendering chan string ){
+func render(rendering chan string ){
+	
 	for {
+		cmd:=exec.Command("clear")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
 		s := <- rendering
 		fmt.Println(s)
-	}
-	done <- true
+		
+	}	
+	
 }
 
-func fill(rendering chan string ){
-	for {
-		rendering<-"lol"
+func fill(done chan bool, rendering chan string ){
+	for i:=0;i<10;i++ {		
+		result := "lol" + strconv.Itoa(i)
+		rendering<- result
 	}
+	done <- true
 }
 
 func main(){
@@ -35,18 +43,23 @@ func main(){
 	queueOut = queue.New()
 	
 	done := make(chan bool, 0)
-	rendering := make(chan string, 0)
+	rendering := make(chan string, 1)
 	
-	//rendering <- "Hallo"
-	go render(done,rendering)
-	go fill(rendering)
+	rendering <- "Hallo"
+	go render(rendering)
+	go fill(done,rendering)
 	
-	close(rendering)
+	//close(rendering)
 	
 	<-done
+	time.Sleep(time.Duration(sekunde))
+	//close (done)
 	
-	//sema := sem.New(5)
-	//sema.P()
-	//fmt.Println("Start")
-	//sema.V()
+	// for i:=0; i < 10000;i++{
+		// cmd:=exec.Command("clear")
+		// cmd.Stdout = os.Stdout
+		// cmd.Run()
+		// fmt.Println("aa", i)
+		// time.Sleep(time.Duration(sekunde))
+	// }
 }
