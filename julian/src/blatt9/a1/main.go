@@ -7,6 +7,7 @@ import (
 	"time"
 	"os"
 	//"strconv"
+	"yulib"
 	"sync"
 )
 
@@ -16,9 +17,13 @@ var queueIn queue.Queue
 var queueOut queue.Queue
 var aufzugUnten bool = true
 var elevator sync.Mutex 
+var in sync.Mutex
+var out sync.Mutex
 
 var sekunde = 1000000000
 
+// rendert die simulation auf die Console (unter Linux wird die console 
+// jedes mal ge"clear"t - funzt leider nicht unter Win)
 func render(rendering chan string ){	
 	for {
 		s := <- rendering
@@ -26,13 +31,14 @@ func render(rendering chan string ){
 		cmd.Stdout = os.Stdout
 		cmd.Run()		
 		fmt.Println(s)		
-	}		
+	}
 }
 
+// Zeichnet jeweils die Scene
 func drawScene(carsIn int , carsOut int , carsParked int ,n int ) string {
 	result := ""
 	for i:=0;i<carsIn;i++ {
-		result += "UU>"
+		result += " U>"
 	}	
 	if aufzugUnten {
 		result += " [ v ] "
@@ -40,7 +46,7 @@ func drawScene(carsIn int , carsOut int , carsParked int ,n int ) string {
 		result += " [ ^ ] "
 	}	
 	for i:=0;i<carsOut;i++ {
-		result += "<U"
+		result += "<U "
 	}	
 	result += "____"	
 	for i:=0;i<carsParked;i++ {
@@ -62,9 +68,65 @@ func fill(done chan bool, rendering chan string ){
 }
 
 func simulate(){
-	
+	for {
+		time.Sleep(time.Duration(sekunde/2))
+		selector := yulib.RandInt(0,10)
+		switch selector { 
+			case 0, 1,2,3,4,5:
+				autoIn()
+			case 6,7,8:
+				autoOut()				
+			// 9,10 sind "leer"
+		}
+	}
 }
 
+// Ein Auto moechte auf das Parkdeck fahren
+func autoIn(){
+	in.Lock()
+	queueIn.Enq("car")
+	in.Unlock()
+}
+
+// Ein Auto (falls eins vorhanden ist) moechte das Parkdeck verlassen
+func autoOut(){
+	if count > 0 {
+		out.Lock()
+		queueOut.Enq("car")
+		count--
+		out.Unlock()
+	}
+}
+
+func queueInSimulate(){
+	for {
+		time.Sleep(time.Duration(sekunde))		
+		for {			
+			if queueIn.Size() == 0 {
+				break
+			}else{		
+				in.Lock()			
+				elem := queueIn.Deq()
+				fmt.Println(elem)
+				in.Unlock()
+			}
+			
+		}
+		
+	}
+}
+
+func queueOutSimulate(){
+	for {
+		time.Sleep(time.Duration(sekunde))	
+		for {
+						
+		}
+	}
+}
+
+// sorgt dafuer, dass der Fahrstuhl nicht verklemmt
+// blabla nicht die beste Loesung blabla
 func simulateElevator(){
 	time.Sleep(time.Duration(sekunde))
 	elevator.Lock()	
@@ -80,6 +142,10 @@ func simulateElevator(){
 	elevator.Unlock()
 }
 
+
+// ==============================
+// M A I N
+// ==============================
 func main(){
 	queueIn = queue.New()
 	queueOut = queue.New()
@@ -94,6 +160,9 @@ func main(){
 	go render(rendering)
 	go fill(done,rendering)
 	go simulateElevator()
+	go simulate()
+	go queueInSimulate()
+	//go queueOutSimulate()
 	
 	<-done
 	time.Sleep(time.Duration(sekunde))
