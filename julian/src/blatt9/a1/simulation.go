@@ -32,7 +32,6 @@ func Rein(d *ParkingDeck, rendering chan string,done chan bool){
 		d.TryEnter()	
 		fill(d, rendering,done)		
 		time.Sleep(time.Duration(time.Second))
-		fill(d, rendering,done)
 	}
 }
 
