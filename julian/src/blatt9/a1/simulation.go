@@ -51,7 +51,7 @@ func Raus(d *ParkingDeck, rendering chan string,done chan bool){
 func fill(deck *ParkingDeck, rendering chan string, done chan bool ){	
 	// for i:=0; i<50;i++ {
 		e:=deck.Elevator()
-		aufzugUnten := true
+		aufzugUnten := e.IsFull
 		rendering <- drawScene(len(e.In), len(e.Out), deck.ParkedCars(), deck.N(),aufzugUnten)
 		time.Sleep(time.Duration(time.Second/5))
 	//}
@@ -76,14 +76,14 @@ func drawScene(carsIn,carsOut,carsParked,n int, aufzugUnten bool ) string {
 		result += " U>"
 	}	
 	if aufzugUnten {
-		result += " [ v ] "
+		result += " [___] "
 	}else{
-		result += " [ ^ ] "
+		result += " [---] "
 	}	
 	for i:=0;i<carsOut;i++ {
 		result += "<U "
 	}	
-	result += "____"	
+	result += ":::::"	
 	for i:=0;i<carsParked;i++ {
 		result += "[<U]"
 	}	

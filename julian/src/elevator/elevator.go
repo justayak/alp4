@@ -12,6 +12,7 @@ type Elevator struct{
 	Out chan bool // Autos, die raus wollen
 	parkingDeck *ParkingDeck
 	IsDown bool 		
+	IsFull bool
 }
 
 func newE(n int) *Elevator {
@@ -19,24 +20,47 @@ func newE(n int) *Elevator {
 	result.In = make(chan bool,n) // damit wir das auch schoen anzeigen koennen..
 	result.Out = make(chan bool,n)
 	result.IsDown = true
+	result.IsFull = false
 	return result
 }
 
 func (e *Elevator) simulate() {
 	go func() {
 		for {	
-			if (e.parkingDeck.IsFull()){
-				// warte, bis einer raus will
-				<-e.Out
-			} else {
-				// parkdeck ist immer noch nicht voll,
-				// da wir NUR hier in "p.cars" schreiben
-				select {
-					case <- e.In:						
-						e.parkingDeck.cars <- true
-					case <-e.Out:
-						// einer will raus 
+			if (e.IsFull){ // wenn der Fahrstuhl belegt ist
+				if e.IsDown {
+					e.parkingDeck.cars <- true
 				}
+				e.IsDown = !e.IsDown
+				e.IsFull = false // Fahrzeug entlassen
+			}else{
+				if (e.parkingDeck.IsFull()){
+					// warte, bis einer raus will
+					e.IsDown = false
+					<-e.Out
+					e.IsFull = true 					
+				// } else if len(e.In)> 0 && len(e.Out) > 0 {
+					// // parkdeck ist immer noch nicht voll,
+					// // da wir NUR hier in "p.cars" schreiben
+					// select {
+						// case <- e.In:						
+							// e.parkingDeck.cars <- true
+						// case <-e.Out:
+							// // einer will raus 
+					// }
+				// }
+					}else if len(e.In)>0 && e.IsDown {
+						<-e.In
+						e.IsFull = true 
+					}else if len(e.Out)>0 && !e.IsDown {
+						<-e.Out
+						e.IsFull = true
+					}else if len(e.In)>0 && len(e.Out)==0 && !e.IsDown {
+						e.IsDown = true
+					}else if len(e.In)==0 && len(e.Out)>0 && e.IsDown {
+						e.IsDown = false
+					}
+					
 			}
 			time.Sleep(time.Second)
 		}
