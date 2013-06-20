@@ -1,11 +1,18 @@
 package elevator
 import (
 	"time"
+	//"fmt"
 )
 
 // ~~~~~~~~~~~~~~~~~~~~~~~
 // E L E V A T O R
 // ~~~~~~~~~~~~~~~~~~~~~~~~
+
+const (
+	In = iota
+	Out = iota
+	None = iota
+)
 
 type Elevator struct{
 	In chan bool  // Autos, die rein wollen
@@ -13,6 +20,7 @@ type Elevator struct{
 	parkingDeck *ParkingDeck
 	IsDown bool 		
 	IsFull bool
+	State int
 }
 
 func newE(n int) *Elevator {
@@ -21,24 +29,38 @@ func newE(n int) *Elevator {
 	result.Out = make(chan bool,n)
 	result.IsDown = true
 	result.IsFull = false
+	result.State = None
 	return result
 }
 
-func (e *Elevator) simulate() {
+func (e *Elevator) simulate( )<- chan bool {
+	notify := make (chan bool,1)
 	go func() {
 		for {	
-			if (e.IsFull){ // wenn der Fahrstuhl belegt ist
-				if e.IsDown {
-					e.parkingDeck.cars <- true
+			if e.State == In || e.State == Out{				
+				if e.State == In { 
+					e.parkingDeck.cars <- true					
 				}
+				e.State = None
+				notify <- true
+			} else if (e.IsFull){ // wenn der Fahrstuhl belegt ist
+				if e.IsDown {
+					e.State = In
+				}else{
+					e.State = Out
+				}
+				notify <- true
 				e.IsDown = !e.IsDown
 				e.IsFull = false // Fahrzeug entlassen
+				notify <- true
 			}else{
 				if (e.parkingDeck.IsFull()){
 					// warte, bis einer raus will
 					e.IsDown = false
+					notify <- true
 					<-e.Out
 					e.IsFull = true 					
+					notify <- true
 				// } else if len(e.In)> 0 && len(e.Out) > 0 {
 					// // parkdeck ist immer noch nicht voll,
 					// // da wir NUR hier in "p.cars" schreiben
@@ -50,21 +72,28 @@ func (e *Elevator) simulate() {
 					// }
 				// }
 					}else if len(e.In)>0 && e.IsDown {
-						<-e.In
+						<-e.In						
 						e.IsFull = true 
+						notify <- true						
 					}else if len(e.Out)>0 && !e.IsDown {
 						<-e.Out
 						e.IsFull = true
+						notify <- true
 					}else if len(e.In)>0 && len(e.Out)==0 && !e.IsDown {
+						notify <- true
 						e.IsDown = true
+						notify <- true
 					}else if len(e.In)==0 && len(e.Out)>0 && e.IsDown {
+						notify <- true
 						e.IsDown = false
+						notify <- true
 					}
 					
 			}
 			time.Sleep(time.Second)
 		}
 	}()
+	return notify
 }
 
 
@@ -76,6 +105,7 @@ type ParkingDeck struct {
 	cars chan bool 
 	n int
 	elevator *Elevator
+	RenderNotifier <-chan bool
 }
 
 func (e *ParkingDeck) N() int {
@@ -88,8 +118,8 @@ func NewParkingDeck(n int) *ParkingDeck {
 	result.n = n	
 	e:=newE(n)
 	e.parkingDeck = result
-	result.elevator = e	
-	e.simulate()
+	result.elevator = e		
+	result.RenderNotifier = e.simulate()
 	return result
 }
 

@@ -18,7 +18,7 @@ func main(){
 	go Rein(deck, rendering,done)
 	go Raus(deck, rendering,done)
 	go render(rendering)
-	// go fill(deck, rendering, done)
+	go fill(deck, rendering, done)
 	<-done
 }
 
@@ -28,19 +28,19 @@ func main(){
 
 func Rein(d *ParkingDeck, rendering chan string,done chan bool){	
 	for {
-		fill(d, rendering,done)
+		// fill(d, rendering,done)
 		d.TryEnter()	
-		fill(d, rendering,done)		
+		// fill(d, rendering,done)		
 		time.Sleep(time.Duration(time.Second))
 	}
 }
 
 func Raus(d *ParkingDeck, rendering chan string,done chan bool){
 	for {		
-		fill(d, rendering,done)
+		// fill(d, rendering,done)
 		time.Sleep(time.Second * 4)
 		d.TryLeave()		
-		fill(d, rendering,done)
+		// fill(d, rendering,done)
 	}
 }
 
@@ -49,12 +49,13 @@ func Raus(d *ParkingDeck, rendering chan string,done chan bool){
 // ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 func fill(deck *ParkingDeck, rendering chan string, done chan bool ){	
-	// for i:=0; i<50;i++ {
+	for i:=0; i<50;i++ {
+		<-deck.RenderNotifier		
 		e:=deck.Elevator()
 		aufzugUnten := e.IsFull
-		rendering <- drawScene(len(e.In), len(e.Out), deck.ParkedCars(), deck.N(),aufzugUnten)
-		time.Sleep(time.Duration(time.Second/5))
-	//}
+		rendering <- drawScene(len(e.In), len(e.Out), deck.ParkedCars(), deck.N(),aufzugUnten, e.State)
+		// time.Sleep(time.Duration(time.Second/5))
+	}
 }
 
 // rendert die simulation auf die Console (unter Linux wird die console 
@@ -70,16 +71,28 @@ func render(rendering chan string ){
 }
 
 // Zeichnet jeweils die Scene
-func drawScene(carsIn,carsOut,carsParked,n int, aufzugUnten bool ) string {
+func drawScene(carsIn,carsOut,carsParked,n int, aufzugUnten bool, state int) string {
 	result := ""
 	for i:=0;i<carsIn;i++ {
 		result += " U>"
 	}	
-	if aufzugUnten {
-		result += " [___] "
-	}else{
-		result += " [---] "
-	}	
+	// if aufzugUnten {
+		// result += " [___] "
+	// }else{
+		// result += " [---] "
+	// }	
+	switch state {
+		case In:
+			result += " [U>_] "
+		case Out:
+			result += " [_<U] "
+		case None:
+			if aufzugUnten {
+			result += " [___] "
+			}else{
+				result += " [---] "
+			}	
+	}
 	for i:=0;i<carsOut;i++ {
 		result += "<U "
 	}	
