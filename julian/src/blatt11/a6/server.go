@@ -35,14 +35,25 @@ func NewUser(name string ) *User {
 // U S E R B A S E
 var users map[ string ] *User
 
+// Die Userbase verwaltet die User. Wir brauchen sie,
+// um eine vernünftige Darstellung zu erzeugen (html)
 func StartUserbase() {
-	
+	fmt.Println("starte Userbase..")
+	users = make( map[ string ] *User, 0)
+}
 
+// Liefert den User mit dem entsprechenden Namen
+// Existiert der User noch nicht, wird ein neuer erzeugt 
+// und zufaellig mit den schon vorhanden verbunden
 func GetUser(name string )*User {
 	result, ok := users[name]
 	if !ok {
 		result := NewUser(name)
+		// verbinde mit anderen User
+		
 		users[name] = result
+		
+		fmt.Println("Erzeuge neuen User <" + name + ">")
 	}	
 	return result
 }
@@ -58,6 +69,9 @@ func handler(w http.ResponseWriter, r *http.Request){
 
 func main() {
   http.HandleFunc("/", handler)
+  
+  StartUserbase()
+  GetUser("hallo")
   GetUser("hallo")
  // http.ListenAndServe(":8080",nil)  
   
