@@ -24,8 +24,27 @@ type User struct {
 	others []User
 }
 
-func NewUser(name string) *User {
-	user:=User{name, make([]User)}
+// ctor
+func NewUser(name string ) *User {
+	return &User{
+		name, 
+		make( []User, 0),
+	}
+}
+
+// U S E R B A S E
+var users map[ string ] *User
+
+func StartUserbase() {
+	
+
+func GetUser(name string )*User {
+	result, ok := users[name]
+	if !ok {
+		result := NewUser(name)
+		users[name] = result
+	}	
+	return result
 }
 
 // ~~~~~~~~~~~~~~~~~
@@ -39,6 +58,7 @@ func handler(w http.ResponseWriter, r *http.Request){
 
 func main() {
   http.HandleFunc("/", handler)
+  GetUser("hallo")
  // http.ListenAndServe(":8080",nil)  
   
 }
