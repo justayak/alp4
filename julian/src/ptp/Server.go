@@ -1,36 +1,9 @@
-/*
-* (c) Programmierung in Go / Addison Wesley 2010
-*     Rainer Feike / Steffen Blass
-*
-* Quellcode-Datei: 10_01_smallserver.go
-* Beschreibung: Ein kleiner Webserver in Go
-*/
-
-package main
+package ptp
 
 import (
-  "fmt"        // enthaelt Formatierungsfunktionen
-  "net/http"       // enthaelt den Servercode und das http Protokoll
-  //"os"         // zur Interaktion mit dem Betriebssystem
-  //"io/ioutil"  // Dateien lesen
-  //"time"       // Zur Logzeitausgabe
+	"fmt"
+	"net/http"
 )
-
-// ~~~~~~~~~~~~~~~~~
-// U S E R
-// ~~~~~~~~~~~~~~~~~
-type User struct {
-	name string 
-	others []User
-}
-
-// ctor
-func NewUser(name string ) *User {
-	return &User{
-		name, 
-		make( []User, 0),
-	}
-}
 
 // U S E R B A S E
 var users map[ string ] *User
@@ -38,7 +11,7 @@ var users map[ string ] *User
 // Die Userbase verwaltet die User. Wir brauchen sie,
 // um eine vernünftige Darstellung zu erzeugen (html)
 func StartUserbase() {
-	fmt.Println("starte Userbase..")
+	fmt.Println("start Userbase..")
 	users = make( map[ string ] *User, 0)
 }
 
@@ -53,7 +26,7 @@ func GetUser(name string )*User {
 		
 		users[name] = result
 		
-		fmt.Println("Erzeuge neuen User <" + name + ">")
+		fmt.Println("Create new User <" + name + ">")
 	}	
 	return result
 }
@@ -67,7 +40,7 @@ func handler(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
 }
 
-func main() {
+/* func main() {
   http.HandleFunc("/", handler)
   
   StartUserbase()
@@ -75,4 +48,4 @@ func main() {
   GetUser("hallo")
  // http.ListenAndServe(":8080",nil)  
   
-}
+} */
