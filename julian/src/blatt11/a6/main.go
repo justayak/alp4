@@ -16,7 +16,7 @@ import (
 func main() {
 	fmt.Println("start..")
 	
-	ptp.StartUserbase()
+	ptp.Start()
 	ptp.GetUser("hallo")
 	ptp.GetUser("hallo")
 	

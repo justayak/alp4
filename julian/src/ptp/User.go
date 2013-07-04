@@ -4,14 +4,14 @@ package ptp
 // U S E R
 // ~~~~~~~~~~~~~~~~~
 type User struct {
-	name string 
-	others []User
+	Name string
+	Other string
 }
 
 // ctor
-func NewUser(name string ) *User {
+func NewUser(name, other string ) *User {
 	return &User{
 		name, 
-		make( []User, 0),
+		other,
 	}
 }
